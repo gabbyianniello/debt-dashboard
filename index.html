@@ -138,6 +138,20 @@ tbody td:first-child{text-align:left;font-weight:500;color:#5b21b6;white-space:n
 .div{border-top:1px solid #ddd6fe;margin:8px 0;padding-top:8px}
 footer{text-align:center;font-size:11px;color:#c4b5fd;padding:1.5rem;border-top:1px solid #ede9fe}
 .mh-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.bw-table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
+.bw-table th{background:#ede9fe;color:#6d28d9;font-weight:500;padding:8px 10px;text-align:left}
+.bw-table td{padding:7px 10px;border-bottom:.5px solid #ede9fe;font-size:13px;color:#1e1b4b;vertical-align:top}
+.bw-table tr:nth-child(even) td{background:#faf8ff}
+.bw-table tr.triple td{background:#fef3c7}
+.bw-table .cat-lbl{font-size:10px;padding:1px 6px;border-radius:20px;font-weight:500;margin-left:4px}
+.bw-bucket{display:flex;justify-content:space-between;align-items:center;padding:6px 0;border-bottom:.5px solid #ede9fe;font-size:13px}
+.bw-bucket:last-child{border-bottom:none}
+.bw-bucket .bname{color:#374151;font-weight:500}
+.bw-bucket .bamt{color:#4c1d95;font-weight:500}
+.bw-bucket .bsub{font-size:11px;color:#8b5cf6;margin-top:1px}
+.bw-chip{display:inline-block;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:20px;padding:2px 10px;font-size:11px;color:#5b21b6;margin:2px}
+.bw-chip.hot{background:#7c3aed;color:#fff;border-color:#7c3aed}
+.bw-chip.amber{background:#fef3c7;color:#92400e;border-color:#fcd34d}
 .wf{display:flex;flex-direction:column;align-items:center;gap:6px;padding:12px 4px}
 .wf-tier{display:grid;width:100%;gap:10px}
 .wf-t1{grid-template-columns:1fr;max-width:260px}
@@ -194,6 +208,7 @@ footer{text-align:center;font-size:11px;color:#c4b5fd;padding:1.5rem;border-top:
   <button class="tab on" id="tab-tracker" onclick="goTab('tracker')">Monthly tracker</button>
   <button class="tab" id="tab-schedule" onclick="goTab('schedule')">Full schedule</button>
   <button class="tab" id="tab-budget" onclick="goTab('budget')">Budget &amp; income</button>
+  <button class="tab" id="tab-biweekly" onclick="goTab('biweekly')">Paycheck planner</button>
 </nav>
 
 <div class="page on" id="page-tracker">
@@ -286,6 +301,19 @@ footer{text-align:center;font-size:11px;color:#c4b5fd;padding:1.5rem;border-top:
   </div>
 </div>
 
+<div class="page" id="page-biweekly">
+  <div class="hero" id="bwHeroEl"></div>
+  <div style="display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px" id="bwCardsEl"></div>
+  <div class="card" style="margin-bottom:14px">
+    <div class="stitle">Paycheck calendar 2026</div>
+    <div id="bwCalEl" style="overflow-x:auto"></div>
+  </div>
+  <div class="card">
+    <div class="stitle">3-paycheck months 🎉</div>
+    <div id="bwBonusEl"></div>
+  </div>
+</div>
+
 <footer>Live sync powered by Supabase · shared with your boyfriend · you've got this 💜</footer>
 
 <!-- Supabase JS client (loaded from CDN) -->
@@ -310,37 +338,67 @@ var ACCOUNTS = [
   {id:"pp",   name:"PayPal",          rate:0,      color:"#c4b5fd", badge:"0%",     min:158,    rank:4}
 ];
 var ORDER = ["cap","bofa","wf","pp"];
-var START = {cap:5058, bofa:11783, wf:8733, pp:5179};
+var START = {cap:5067, bofa:11783, wf:8733, pp:5179};
 var START_TOTAL = 30762;
 var BONUS_MONTH_IDX = 7;
 var BONUS_NET = 7800;
 var EXTRA_POOL = 2000;
-var INCOME = 8200;
+// Biweekly pay: $5,000 gross, $3,850.81 net per check
+// Schedule: May 22, Jun 5, Jun 19, Jul 3, Jul 17, Jul 31, Aug 14...
+var NET_PER_CHECK  = 3850.81;
+var GROSS_PER_CHECK = 5000;
+var INCOME = NET_PER_CHECK * 2; // avg 2-check month = $7,701.62
+// 3-check months in 2026: July, and January 2027
+var INCOME_2CHECK  = NET_PER_CHECK * 2;  // $7,701.62
+var INCOME_3CHECK  = NET_PER_CHECK * 3;  // $11,552.43
+
+// Holding buckets — what to set aside each paycheck
+// Each bucket shows: monthly total, per 2-check paycheck, per 3-check paycheck (same monthly / 3)
+var BUCKETS = [
+  {name:"Rent",            acct:"Chime #8346", monthly:1750,   color:"#a78bfa", icon:"🏠"},
+  {name:"Cell bill",       acct:"CapOne #8355", monthly:100.73, color:"#f9a8d4", icon:"📱"},
+  {name:"Food/Necessities",acct:"CapOne #7369", monthly:600,    color:"#86efac", icon:"🛒"},
+  {name:"Therapy/Self care",acct:"CapOne #3334",monthly:175,    color:"#c4b5fd", icon:"💆"},
+  {name:"Debt repayment",  acct:"CapOne #5002", monthly:3290.75,color:"#fcd34d", icon:"💳"},
+  {name:"Recurring expenses",acct:"Chime",      monthly:416.81, color:"#fda4af", icon:"🔄"},
+  {name:"Car & fun fund",  acct:"Chime",        monthly:400,    color:"#67e8f9", icon:"🚗"},
+];
+// Recurring breakdown: Spotify $12.98 + Canva $12.95 + Apple $9.99 + Planet Fitness $23 +
+//   LifeTime $240 + Claude $21.23 + Squirrel $150 - (some are wants but grouped here) = $470.15
+// Using $416.81 to match spreadsheet (excludes LifeTime from this bucket, already in needs)
+var BUCKET_RECURRING_DETAIL = [
+  {name:"LifeTime Fitness", amt:240},
+  {name:"Planet Fitness",   amt:23},
+  {name:"Spotify",          amt:12.98},
+  {name:"Canva",            amt:12.95},
+  {name:"Apple 1TB",        amt:9.99},
+  {name:"Claude Pro",       amt:21.23},
+  {name:"Squirrel fund",    amt:150},
+];
 var MONTHS = [
   "May 2026","Jun 2026","Jul 2026","Aug 2026","Sep 2026","Oct 2026",
   "Nov 2026","Dec 2026","Jan 2027","Feb 2027","Mar 2027","Apr 2027",
   "May 2027","Jun 2027","Jul 2027","Aug 2027","Sep 2027","Oct 2027","Nov 2027","Dec 2027"
 ];
 var BUDGET_ITEMS = [
-  {name:"Rent + utilities",      amt:1750, cat:"need"},
-  {name:"Groceries/necessities", amt:600,  cat:"need"},
-  {name:"Cell",                  amt:101,  cat:"need"},
-  {name:"WiFi",                  amt:20,   cat:"need"},
-  {name:"Gas / commute",         amt:100,  cat:"need"},
-  {name:"Car insurance",         amt:70,   cat:"need"},
-  {name:"Car payment",           amt:200,  cat:"need"},
-  {name:"Squirrel fund",         amt:150,  cat:"need"},
-  {name:"LifeTime Fitness",      amt:240,  cat:"want"},
-  {name:"Planet Fitness",        amt:23,   cat:"want"},
-  {name:"Therapy / chiro",       amt:175,  cat:"want"},
-  {name:"Spotify",               amt:13,   cat:"want"},
-  {name:"Canva",                 amt:13,   cat:"want"},
-  {name:"Apple 1TB",             amt:10,   cat:"want"},
-  {name:"Netflix",               amt:9,    cat:"want"},
-  {name:"Fun fund",              amt:100,  cat:"want"},
-  {name:"Claude Pro",            amt:21,   cat:"want"}
+  {name:"Rent + utilities",      amt:1750,   cat:"need"},
+  {name:"Groceries/necessities", amt:600,    cat:"need"},
+  {name:"Cell",                  amt:100.73, cat:"need"},
+  {name:"WiFi",                  amt:20,     cat:"need"},
+  {name:"Gas / commute",         amt:100,    cat:"need"},
+  {name:"Car payment (Cass)",    amt:200,    cat:"need"},
+  {name:"Squirrel fund",         amt:150,    cat:"need"},
+  {name:"LifeTime Fitness",      amt:240,    cat:"want"},
+  {name:"Planet Fitness",        amt:23,     cat:"want"},
+  {name:"Therapy / chiro",       amt:175,    cat:"want"},
+  {name:"Spotify",               amt:12.98,  cat:"want"},
+  {name:"Canva",                 amt:12.95,  cat:"want"},
+  {name:"Apple 1TB",             amt:9.99,   cat:"want"},
+  {name:"Netflix",               amt:8.65,   cat:"want"},
+  {name:"Fun fund",              amt:100,    cat:"want"},
+  {name:"Claude Pro",            amt:21.23,  cat:"want"},
 ];
-var DEBT_BUDGET = 3291;
+var DEBT_BUDGET = 3290.75;
 var NEEDS_TOTAL = 0, WANTS_TOTAL = 0;
 for (var bi=0; bi<BUDGET_ITEMS.length; bi++) {
   if (BUDGET_ITEMS[bi].cat === "need") NEEDS_TOTAL += BUDGET_ITEMS[bi].amt;
@@ -563,7 +621,7 @@ function buildProjection() {
 
 // ═══ ACTIONS ══════════════════════════════════════════════════════
 window.goTab = function(name) {
-  var names = ["tracker","schedule","budget"];
+  var names = ["tracker","schedule","budget","biweekly"];
   for (var i=0; i<names.length; i++) {
     el("tab-"+names[i]).className = "tab" + (names[i]===name ? " on" : "");
     el("page-"+names[i]).className = "page" + (names[i]===name ? " on" : "");
@@ -643,6 +701,7 @@ function render() {
   renderSchedule(proj);
   renderBudget();
   renderWaterfall(row);
+  renderBiweekly();
 }
 
 function renderProgress(proj) {
@@ -894,10 +953,13 @@ function renderBudget() {
   }
   el("pieLegEl").innerHTML = legHtml;
   var incData = [
-    ["Monthly take-home (Jun+)","$8,200","After tax · new job · Austin TX"],
-    ["May paycheck (old job)","$5,425","Apr 30 · transition month"],
-    ["Annual salary","$130,000","Pre-tax"],
-    ["Year-end bonus (min)","$10,000","Pre-tax"],
+    ["Net per paycheck","$3,850.81","Every 2 weeks · $5,000 gross"],
+    ["2-paycheck month","$7,701.62","Most months (Jun, Aug, Sep, Oct, Nov, Dec)"],
+    ["3-paycheck month","$11,552.43","July 2026 & January 2027 🎉"],
+    ["May paycheck (old job)","$5,425","Apr 30 · covered May minimums"],
+    ["May 22 paycheck (new job)","$3,850.81","First Modern Wisdom check"],
+    ["Annual salary","$130,000","Pre-tax · $5,000 gross per check"],
+    ["Year-end bonus (min)","$10,000","Pre-tax · Dec 2026"],
     ["Bonus net (22% fed only)","$7,800","No TX state income tax!"]
   ];
   var iHtml="";
@@ -942,6 +1004,126 @@ function renderWaterfall(row) {
   html += '</div>';
   html += '<div class="wf-key">The <strong style="color:#dc2626">#1 (CapOne)</strong> gets ALL the extra pool until paid off. Then its $400 minimum frees up and cascades into <strong style="color:#f59e0b">#2 (BofA)</strong>, and so on. This is the <strong>avalanche method</strong> — pay highest APR first, save the most on interest.</div>';
   el("wfEl").innerHTML = html;
+}
+
+// ═══ BIWEEKLY RENDERER ════════════════════════════════════════════
+function renderBiweekly() {
+  // Generate paycheck dates from May 22, 2026 every 14 days
+  var checks = [];
+  var d = new Date(2026, 4, 22); // May 22 2026
+  while (d.getFullYear() <= 2027 && !(d.getFullYear()===2027 && d.getMonth()>2)) {
+    checks.push(new Date(d));
+    d.setDate(d.getDate() + 14);
+  }
+
+  // Group by month
+  var byMonth = {};
+  for (var ci=0; ci<checks.length; ci++) {
+    var c = checks[ci];
+    var key = c.getFullYear()+'-'+(c.getMonth()+1);
+    if (!byMonth[key]) byMonth[key] = {year:c.getFullYear(), month:c.getMonth(), checks:[]};
+    byMonth[key].checks.push(new Date(c));
+  }
+
+  var monthKeys = Object.keys(byMonth).sort();
+  var totalBuckets = BUCKETS.reduce(function(a,b){return a+b.monthly;},0);
+  var totalOut2 = totalBuckets + DEBT_BUDGET; // debt already in buckets via BUCKETS
+  // actually buckets include debt, so just show bucket total
+  var bucketTotal = BUCKETS.reduce(function(a,b){return a+b.monthly;},0);
+
+  // Hero cards
+  var heroHtml =
+    '<div class="card"><div class="clbl">Net per paycheck</div><div class="cval">$3,851</div><div class="csub">$5,000 gross · biweekly</div></div>'
+    +'<div class="card"><div class="clbl">2-check month</div><div class="cval">$7,702</div><div class="csub">Jun, Aug–Dec 2026</div></div>'
+    +'<div class="card"><div class="clbl">3-check month</div><div class="cval">$11,552</div><div class="csub">July 2026 & Jan 2027 🎉</div></div>'
+    +'<div class="card"><div class="clbl">Next paycheck</div><div class="cval">Jun 5</div><div class="csub">Then Jun 19, Jul 3…</div></div>';
+  el("bwHeroEl").innerHTML = heroHtml;
+
+  // Per-paycheck bucket cards (left = 2-check month, right = 3-check month)
+  var bucketHtml2 = '<div class="card"><div class="stitle">Per paycheck — normal month (2 checks)</div>';
+  var bucketHtml3 = '<div class="card"><div class="stitle">Per paycheck — 3-check month 🎉</div><div style="font-size:12px;color:#8b5cf6;margin-bottom:10px">Same monthly bills ÷ 3 checks = smaller slices. Extra check goes to debt!</div>';
+
+  var runningTotal2 = 0, runningTotal3 = 0;
+  for (var bi=0; bi<BUCKETS.length; bi++) {
+    var bk = BUCKETS[bi];
+    var per2 = bk.monthly / 2;
+    var per3 = bk.monthly / 3;
+    runningTotal2 += per2;
+    runningTotal3 += per3;
+    var isDebt = bk.name === "Debt repayment";
+    bucketHtml2 += '<div class="bw-bucket">'
+      +'<div><div class="bname">'+bk.icon+' '+bk.name+'</div>'
+      +'<div class="bsub">'+bk.acct+'</div></div>'
+      +'<div class="bamt"'+(isDebt?' style="color:#166534"':'')+'>$'+per2.toFixed(2)+'</div></div>';
+    bucketHtml3 += '<div class="bw-bucket">'
+      +'<div><div class="bname">'+bk.icon+' '+bk.name+'</div>'
+      +'<div class="bsub">'+bk.acct+'</div></div>'
+      +'<div class="bamt">$'+per3.toFixed(2)+'</div></div>';
+  }
+  var leftover2 = NET_PER_CHECK - runningTotal2;
+  var leftover3 = NET_PER_CHECK - runningTotal3;
+  bucketHtml2 += '<div class="bw-bucket" style="border-top:1px solid #ddd6fe;margin-top:6px;padding-top:10px">'
+    +'<div class="bname" style="color:#166534">Leftover per check</div>'
+    +'<div class="bamt" style="color:#166534">$'+leftover2.toFixed(2)+'</div></div></div>';
+  bucketHtml3 += '<div class="bw-bucket" style="border-top:1px solid #ddd6fe;margin-top:6px;padding-top:10px">'
+    +'<div class="bname" style="color:#7c3aed">Extra check → ALL to debt 💜</div>'
+    +'<div class="bamt" style="color:#7c3aed">~$'+NET_PER_CHECK.toFixed(0)+'</div></div>'
+    +'<div class="bw-bucket"><div class="bname" style="color:#166534">Leftover per check</div>'
+    +'<div class="bamt" style="color:#166534">$'+leftover3.toFixed(2)+'</div></div></div>';
+
+  el("bwCardsEl").innerHTML = bucketHtml2 + bucketHtml3;
+
+  // Calendar table
+  var calHtml = '<table class="bw-table"><thead><tr>'
+    +'<th>Month</th><th>Paycheck dates</th><th>Gross</th><th>Net take-home</th>'
+    +'<th>Debt this month</th><th>Notes</th></tr></thead><tbody>';
+
+  var threeCheckMonths = ['2026-7','2027-1'];
+
+  for (var mi=0; mi<monthKeys.length; mi++) {
+    var mk = monthKeys[mi];
+    var mo = byMonth[mk];
+    var isTriple = threeCheckMonths.indexOf(mk) !== -1;
+    var numChecks = mo.checks.length;
+    var grossMo = GROSS_PER_CHECK * numChecks;
+    var netMo = NET_PER_CHECK * numChecks;
+    var debtMo = DEBT_BUDGET; // monthly debt stays same
+    var extraDebt = isTriple ? NET_PER_CHECK : 0; // 3rd check goes to debt
+    var totalDebt = debtMo + extraDebt;
+    var monthName = mo.checks[0].toLocaleDateString('en-US',{month:'long',year:'numeric'});
+    var dates = mo.checks.map(function(c){return c.toLocaleDateString('en-US',{month:'short',day:'numeric'});}).join(', ');
+    var notes = isTriple
+      ? '<span class="bw-chip amber">3 checks!</span><span class="bw-chip hot">Extra ~$3,851 → debt</span>'
+      : (mk==='2026-5' ? '<span class="bw-chip">First new-job check (May 22)</span>' : '');
+    var rowClass = isTriple ? ' class="triple"' : '';
+    calHtml += '<tr'+rowClass+'>'
+      +'<td><strong>'+monthName+'</strong>'+(isTriple?' 🎉':'')+'</td>'
+      +'<td style="font-size:12px;color:#5b21b6">'+dates+'</td>'
+      +'<td>$'+grossMo.toLocaleString('en-US',{maximumFractionDigits:0})+'</td>'
+      +'<td style="font-weight:500">$'+netMo.toFixed(2).replace(/\B(?=(\d{3})+(?!\d))/g,",")+'</td>'
+      +'<td style="color:#166534;font-weight:500">$'+totalDebt.toLocaleString('en-US',{maximumFractionDigits:2})+(extraDebt>0?' <span style="font-size:10px;color:#7c3aed">+$3,851 extra</span>':'')+'</td>'
+      +'<td>'+notes+'</td></tr>';
+  }
+  calHtml += '</tbody></table>';
+  el("bwCalEl").innerHTML = calHtml;
+
+  // 3-check month bonus breakdown
+  var bonusHtml = '<p style="font-size:13px;color:#6b7280;margin-bottom:12px">In July 2026 and January 2027 you get 3 paychecks. Your bills are already covered by checks 1 & 2. The entire 3rd check (~$3,851) goes straight to debt.</p>';
+  bonusHtml += '<div style="display:grid;grid-template-columns:1fr 1fr;gap:14px">';
+  var tripleMonths2 = [{label:"July 2026",dates:"Jul 3, Jul 17, Jul 31"},{label:"January 2027",dates:"Jan 2, Jan 16, Jan 30"}];
+  for (var ti=0; ti<tripleMonths2.length; ti++) {
+    var tm = tripleMonths2[ti];
+    bonusHtml += '<div style="background:#f5f3ff;border:1px solid #ddd6fe;border-radius:10px;padding:12px">'
+      +'<div style="font-size:13px;font-weight:500;color:#4c1d95;margin-bottom:6px">'+tm.label+' 🎉</div>'
+      +'<div style="font-size:12px;color:#5b21b6;margin-bottom:8px">'+tm.dates+'</div>'
+      +'<div class="bw-bucket"><span>Check 1 + 2 cover bills</span><span style="color:#166534">✓</span></div>'
+      +'<div class="bw-bucket"><span>Check 3 → debt attack</span><span style="color:#7c3aed;font-weight:500">+$3,851</span></div>'
+      +'<div class="bw-bucket" style="border-top:1px solid #ddd6fe;margin-top:4px;padding-top:8px">'
+      +'<span style="font-weight:500">Total debt this month</span>'
+      +'<span style="font-weight:500;color:#166534">$'+( DEBT_BUDGET+NET_PER_CHECK).toLocaleString('en-US',{maximumFractionDigits:0})+'</span></div></div>';
+  }
+  bonusHtml += '</div>';
+  el("bwBonusEl").innerHTML = bonusHtml;
 }
 
 // ═══ INIT ═════════════════════════════════════════════════════════
