@@ -138,6 +138,42 @@ tbody td:first-child{text-align:left;font-weight:500;color:#5b21b6;white-space:n
 .div{border-top:1px solid #ddd6fe;margin:8px 0;padding-top:8px}
 footer{text-align:center;font-size:11px;color:#c4b5fd;padding:1.5rem;border-top:1px solid #ede9fe}
 .mh-row{display:flex;align-items:center;gap:8px;margin-bottom:14px;flex-wrap:wrap}
+.editable-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid #f5f3ff;font-size:13px;gap:8px}
+.editable-row .bname{color:#374151;flex:1}
+.edit-amt-wrap{display:flex;align-items:center;gap:4px}
+.edit-amt{width:90px;padding:3px 8px;font-size:13px;font-weight:500;border:1px solid #ddd6fe;border-radius:6px;color:#4c1d95;background:#fff;font-family:inherit;outline:none;text-align:right}
+.edit-amt.changed{border-color:#f59e0b;background:#fffbeb;color:#b45309}
+.edit-amt:focus{border-color:#7c3aed;background:#f5f3ff}
+.edit-reset{background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px;padding:0 2px;line-height:1}
+.edit-reset:hover{color:#ef4444}
+.month-budget-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.month-sel{padding:4px 10px;font-size:12px;border:1px solid #ddd6fe;border-radius:8px;font-family:inherit;color:#4c1d95;background:#f5f3ff;cursor:pointer;outline:none}
+.income-edit-row{padding:7px 0;border-bottom:.5px solid #f5f3ff}
+.income-edit-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.income-edit-lbl{font-size:13px;color:#374151;flex:1}
+.income-edit-inp{width:110px;padding:3px 8px;font-size:13px;font-weight:500;border:1px solid #ddd6fe;border-radius:6px;color:#4c1d95;background:#fff;font-family:inherit;outline:none;text-align:right}
+.income-edit-inp.changed{border-color:#f59e0b;background:#fffbeb;color:#b45309}
+.income-edit-inp:focus{border-color:#7c3aed;background:#f5f3ff}
+.income-edit-sub{font-size:11px;color:#8b5cf6;margin-top:2px}
+.locked-badge{font-size:10px;background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:10px;margin-left:6px}
+.editable-row{display:flex;justify-content:space-between;align-items:center;padding:5px 0;border-bottom:.5px solid #f5f3ff;font-size:13px;gap:8px}
+.editable-row .bname{color:#374151;flex:1}
+.edit-amt-wrap{display:flex;align-items:center;gap:4px}
+.edit-amt{width:90px;padding:3px 8px;font-size:13px;font-weight:500;border:1px solid #ddd6fe;border-radius:6px;color:#4c1d95;background:#fff;font-family:inherit;outline:none;text-align:right}
+.edit-amt.changed{border-color:#f59e0b;background:#fffbeb;color:#b45309}
+.edit-amt:focus{border-color:#7c3aed;background:#f5f3ff}
+.edit-reset{background:none;border:none;cursor:pointer;color:#9ca3af;font-size:14px;padding:0 2px;line-height:1}
+.edit-reset:hover{color:#ef4444}
+.month-budget-hdr{display:flex;justify-content:space-between;align-items:center;margin-bottom:12px}
+.month-sel{padding:4px 10px;font-size:12px;border:1px solid #ddd6fe;border-radius:8px;font-family:inherit;color:#4c1d95;background:#f5f3ff;cursor:pointer;outline:none}
+.income-edit-row{padding:7px 0;border-bottom:.5px solid #f5f3ff}
+.income-edit-top{display:flex;justify-content:space-between;align-items:center;gap:8px}
+.income-edit-lbl{font-size:13px;color:#374151;flex:1}
+.income-edit-inp{width:110px;padding:3px 8px;font-size:13px;font-weight:500;border:1px solid #ddd6fe;border-radius:6px;color:#4c1d95;background:#fff;font-family:inherit;outline:none;text-align:right}
+.income-edit-inp.changed{border-color:#f59e0b;background:#fffbeb;color:#b45309}
+.income-edit-inp:focus{border-color:#7c3aed;background:#f5f3ff}
+.income-edit-sub{font-size:11px;color:#8b5cf6;margin-top:2px}
+.locked-badge{font-size:10px;background:#f3f4f6;color:#6b7280;padding:1px 6px;border-radius:10px;margin-left:6px}
 .bw-table{width:100%;border-collapse:collapse;font-size:12px;min-width:600px}
 .bw-table th{background:#ede9fe;color:#6d28d9;font-weight:500;padding:8px 10px;text-align:left}
 .bw-table td{padding:7px 10px;border-bottom:.5px solid #ede9fe;font-size:13px;color:#1e1b4b;vertical-align:top}
@@ -273,7 +309,14 @@ footer{text-align:center;font-size:11px;color:#c4b5fd;padding:1.5rem;border-top:
   </div>
   <div class="two">
     <div class="card">
-      <div class="stitle">Monthly expenses (Jun 2026+)</div>
+      <div class="month-budget-hdr">
+        <div class="stitle" style="margin-bottom:0">Monthly expenses</div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span style="font-size:11px;color:#8b5cf6">Viewing:</span>
+          <select class="month-sel" id="budgetMonthSel" onchange="budgetMonth=parseInt(this.value);renderBudget()"></select>
+        </div>
+      </div>
+      <div style="font-size:11px;color:#8b5cf6;margin-bottom:10px">Click any amount to edit. Changes save instantly and carry forward to future months.</div>
       <div id="budgListEl"></div>
       <div class="div" id="budgTotEl"></div>
     </div>
@@ -409,11 +452,16 @@ var LEFTOVER = INCOME - EXPENSES_TOTAL - DEBT_BUDGET;
 
 // ═══ STATE ═══════════════════════════════════════════════════════
 var state = {
-  actuals:   {},
-  paidMarks: {},
-  notes:     {}
+  actuals:    {},   // monthly debt payment actuals
+  paidMarks:  {},   // payment checkmarks
+  notes:      {},   // monthly notes
+  budgetOvr:  {},   // per-month expense overrides {monthIdx: {itemName: amount}}
+  incomeOvr:  {},   // per-month income overrides {monthIdx: {checksThisMonth: n, netPerCheck: n}}
+  debtMinOvr: {}    // per-month debt minimum overrides {monthIdx: {acctId: minAmt}}
 };
 var activeMonth = 0;
+var budgetMonth = 0;
+var budgetMonth = 0; // which month the budget tab is viewing
 var saveTimer   = null;
 var supabase    = null;
 var channel     = null;
@@ -804,14 +852,14 @@ function renderMonthDetail(row, proj) {
       var ckLabel = ck ? "Paid ✓" : (pnow ? "Confirm final payment" : "Mark paid");
       var prefix = pnow ? '<span class="bdg bdg-now" style="margin-right:6px">🎉 FINAL</span>' : '';
       badge = prefix + '<label class="ck-lbl"><input type="checkbox"'+(ck?" checked":"")
-        +' onchange="togglePaid('+activeMonth+',\''+a.id+'\')">'
+        +' data-mi="'+activeMonth+'" data-id="'+a.id+'" onchange="togglePaid(parseInt(this.dataset.mi),this.dataset.id)">'
         +'<span class="ck-txt'+(ck?" on":"")+'">'+ckLabel+'</span></label>';
     }
     var body = "";
     if (!gone) {
       var dispVal = isEdited ? actVal : propVal;
       var resetIcon = isEdited
-        ? '<button class="reset-btn" onclick="resetField('+activeMonth+',\''+a.id+'\')" title="Reset to strategy ('+usd(propVal)+')">↺</button>'
+        ? '<button class="reset-btn" data-mi="'+activeMonth+'" data-id="'+a.id+'" onclick="resetField(parseInt(this.dataset.mi),this.dataset.id)" title="Reset to strategy ('+usd(propVal)+')">&#8630;</button>'
         : "";
       body = '<div class="acc-bals">'
         + '<span>Balance: <strong>'+usd(sB)+'</strong></span>'
@@ -823,7 +871,7 @@ function renderMonthDetail(row, proj) {
         + '<div class="act-box"><div class="blbl"><span>'+(isEdited?"You paid (edited)":"You paid")+'</span></div>'
         + '<div class="inp-wrap"><span class="dollar">$</span>'
         + '<input type="number" step="0.01" min="0" class="'+(isEdited?"ed":"")+'" value="'+dispVal+'"'
-        + ' oninput="setActual('+activeMonth+',\''+a.id+'\',this.value)"/>'+resetIcon+'</div></div></div>';
+        + ' data-mi="'+activeMonth+'" data-id="'+a.id+'" oninput="setActual(parseInt(this.dataset.mi),this.dataset.id,this.value)"/>'+resetIcon+'</div></div></div>';
     }
     aHtml += '<div class="'+cls+'"><div class="acc-hdr"><div class="acc-nrow">'
       + '<div class="dot" style="background:'+a.color+'"></div>'
@@ -871,7 +919,7 @@ function renderStrategy(row) {
   }
   var html = '<div class="strat-ttl">Strategy for ' + row.label + '</div><div class="strat-body">';
   if (row.isMay) {
-    html += 'Transition month: your old job\'s final paycheck ($5,425 on Apr 30) covers only the <strong>minimum payments</strong> on all four cards. No extra pool this month.';
+    html += 'Transition month: your old job&#39;s final paycheck ($5,425 on Apr 30) covers only the <strong>minimum payments</strong> on all four cards. No extra pool this month.';
   } else if (row.isBonus) {
     html += 'Your $10,000 bonus lands (≈$7,800 after federal tax — no TX state tax 🎉). That gets added to the normal $2,000 extra pool, so <strong>$'+Math.round(2000+BONUS_NET).toLocaleString()+' of extra</strong> waterfalls into the highest-APR account.';
   } else {
@@ -906,8 +954,8 @@ function renderSchedule(proj) {
       var actCell;
       if (gone) { actCell = '<span class="tgone">—</span>'; }
       else {
-        var rstBtn = ed ? '<button class="ti-reset" onclick="resetField('+ri+',\''+a.id+'\')" title="Reset">↺</button>' : '';
-        actCell = '<div class="ti-wrap"><input type="number" step="0.01" min="0" class="ti'+(ed?" ed":"")+'" value="'+actV+'" oninput="setActual('+ri+',\''+a.id+'\',this.value)"/>'+rstBtn+'</div>';
+        var rstBtn = ed ? '<button class="ti-reset" data-ri="'+ri+'" data-id="'+a.id+'" onclick="resetField(parseInt(this.dataset.ri),this.dataset.id)" title="Reset">↺</button>' : '';
+        actCell = '<div class="ti-wrap"><input type="number" step="0.01" min="0" class="ti'+(ed?" ed":"")+'" value="'+actV+'" data-ri="'+ri+'" data-id="'+a.id+'" oninput="setActual(parseInt(this.dataset.ri),this.dataset.id,this.value)"/>'+rstBtn+'</div>';
       }
       cells += '<td style="border-left:1px solid #ede9fe">'+planCell+'</td><td>'+actCell+'</td>';
     }
@@ -921,65 +969,167 @@ function renderSchedule(proj) {
 }
 
 function renderBudget() {
+  var proj = buildProjection();
+  var mi = Math.min(budgetMonth, proj.length-1);
+
+  // Populate month selector
+  var selEl = el("budgetMonthSel");
+  if (selEl) {
+    var selHtml = "";
+    for (var pi=0; pi<proj.length; pi++) {
+      selHtml += '<option value="'+pi+'"'+(pi===mi?' selected':'')+'>'+proj[pi].label+'</option>';
+    }
+    selEl.innerHTML = selHtml;
+  }
+
+  var isPast = mi < getCurrentMonthIdx();
+  var items = getBudgetForMonth(mi);
+  var inc = getIncomeForMonth(mi);
+
+  // Expense list
+  var needsTot=0, wantsTot=0;
   var bHtml = "";
-  for (var bi=0; bi<BUDGET_ITEMS.length; bi++) {
-    var b = BUDGET_ITEMS[bi];
-    bHtml += '<div class="brow"><span class="bname">'+b.name+'<span class="cat c'+(b.cat==="need"?"n":"w")+'">'+b.cat+'</span></span><span class="bamt">$'+b.amt.toLocaleString()+'</span></div>';
+  for (var bi=0; bi<items.length; bi++) {
+    var b = items[bi];
+    if (b.cat==="need") needsTot+=b.amt; else wantsTot+=b.amt;
+    var changed = b.isChanged;
+    var lockBadge = isPast ? '<span class="locked-badge">locked</span>' : '';
+    var safeN = b.name.replace(/'/g, "&#39;");
+    var resetBtn = (!isPast && changed)
+      ? '<button class="edit-reset" onclick="resetBudgetItem('+mi+',this.dataset.n)" data-n="'+safeN+'" title="Reset">&#8630;</button>'
+      : '';
+    var inputEl = isPast
+      ? '<span class="bamt">$'+b.amt.toFixed(2)+'</span>'
+      : '<div class="edit-amt-wrap">'
+        +'<input type="number" step="0.01" min="0" class="edit-amt'+(changed?' changed':'')+'" value="'+b.amt.toFixed(2)+'"'
+        +' data-mi="'+mi+'" data-n="'+safeN+'" onchange="setBudgetItem(parseInt(this.dataset.mi),this.dataset.n,this.value)"/>'
+        +resetBtn+'</div>';
+    bHtml += '<div class="editable-row">'
+      +'<span class="bname">'+b.name
+      +'<span class="cat c'+(b.cat==="need"?"n":"w")+'">'+b.cat+'</span>'+lockBadge+'</span>'
+      +inputEl+'</div>';
   }
   el("budgListEl").innerHTML = bHtml;
+
+  // Debt minimums section
+  var debtRows = "";
+  var debtTot = 0;
+  for (var ai=0; ai<ACCOUNTS.length; ai++) {
+    var a = ACCOUNTS[ai];
+    var dMin = getDebtMinForMonth(mi, a.id);
+    debtTot += dMin;
+    var dChanged = Math.abs(dMin - a.min) > 0.01;
+    var dReset = (!isPast && dChanged)
+      ? '<button class="edit-reset" onclick="resetDebtMin('+mi+',this.dataset.id)" data-id="'+a.id+'" title="Reset">&#8630;</button>'
+      : '';
+    var dInp = isPast
+      ? '<span style="font-weight:500;color:#4c1d95">$'+dMin.toFixed(2)+'</span>'
+      : '<div class="edit-amt-wrap">'
+        +'<input type="number" step="0.01" min="0" class="edit-amt'+(dChanged?' changed':'')+'" value="'+dMin.toFixed(2)+'"'
+        +' data-mi="'+mi+'" data-id="'+a.id+'" onchange="setDebtMin(parseInt(this.dataset.mi),this.dataset.id,this.value)"/>'
+        +dReset+'</div>';
+    debtRows += '<div class="editable-row">'
+      +'<span class="bname" style="display:flex;align-items:center;gap:6px">'
+      +'<span style="width:8px;height:8px;border-radius:50%;background:'+a.color+';display:inline-block"></span>'
+      +a.name+' <span style="font-size:10px;color:#8b5cf6">('+a.badge+')</span></span>'
+      +dInp+'</div>';
+  }
+
+  var expTot = needsTot + wantsTot;
+  var totalOut = expTot + debtTot;
+  var lft = inc.total - totalOut;
+
   el("budgTotEl").innerHTML =
-    '<div class="tot-row"><span>Needs subtotal</span><span>$'+NEEDS_TOTAL.toLocaleString()+'</span></div>'
-    + '<div class="tot-row"><span>Wants subtotal</span><span>$'+WANTS_TOTAL.toLocaleString()+'</span></div>'
-    + '<div class="tot-row"><span>Expenses subtotal</span><span>$'+EXPENSES_TOTAL.toLocaleString()+'</span></div>'
-    + '<div class="tot-row"><span>Debt payments</span><span>$'+DEBT_BUDGET.toLocaleString()+'</span></div>'
-    + '<div class="tot-row"><span>Total out</span><span>$'+(EXPENSES_TOTAL+DEBT_BUDGET).toLocaleString()+'</span></div>'
-    + '<div class="lft-row"><span>Leftover / month</span><span>$'+LEFTOVER.toLocaleString()+'</span></div>';
-  var slices = [{v:NEEDS_TOTAL,c:"#a78bfa",l:"Needs"},{v:WANTS_TOTAL,c:"#f9a8d4",l:"Wants"},{v:DEBT_BUDGET,c:"#86efac",l:"Debt"},{v:LEFTOVER,c:"#fcd34d",l:"Leftover"}];
-  var tot = NEEDS_TOTAL + WANTS_TOTAL + DEBT_BUDGET + LEFTOVER;
-  var ang = -Math.PI/2, cx=70, cy=70, r=60, pieSvg="";
+    '<div style="font-size:12px;font-weight:500;color:#6d28d9;margin:10px 0 6px">Debt minimums (editable)</div>'
+    + debtRows
+    + '<div style="border-top:1px solid #ddd6fe;margin-top:10px;padding-top:8px">'
+    + '<div class="tot-row"><span>Needs subtotal</span><span>$'+needsTot.toFixed(2)+'</span></div>'
+    + '<div class="tot-row"><span>Wants subtotal</span><span>$'+wantsTot.toFixed(2)+'</span></div>'
+    + '<div class="tot-row"><span>Expenses subtotal</span><span>$'+expTot.toFixed(2)+'</span></div>'
+    + '<div class="tot-row"><span>Debt payments</span><span>$'+debtTot.toFixed(2)+'</span></div>'
+    + '<div class="tot-row"><span>Total out</span><span>$'+totalOut.toFixed(2)+'</span></div>'
+    + '<div class="lft-row"><span>Leftover / month</span>'
+    + '<span style="color:'+(lft<0?"#ef4444":"#166534")+'">$'+lft.toFixed(2)+'</span></div>'
+    + '</div>';
+
+  // Pie chart
+  var slices = [
+    {v:needsTot, c:"#a78bfa", l:"Needs"},
+    {v:wantsTot, c:"#f9a8d4", l:"Wants"},
+    {v:debtTot,  c:"#86efac", l:"Debt"},
+    {v:Math.max(0,lft), c:"#fcd34d", l:"Leftover"}
+  ];
+  var tot = needsTot+wantsTot+debtTot+Math.max(0,lft);
+  var ang=-Math.PI/2, cx=70, cy=70, r=60, pieSvg="";
   for (var si=0; si<slices.length; si++) {
-    var s = slices[si];
-    var sweep = (s.v/tot)*2*Math.PI;
-    var x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang);
-    ang+=sweep;
+    var s=slices[si]; if (s.v<=0) continue;
+    var sweep=(s.v/tot)*2*Math.PI;
+    var x1=cx+r*Math.cos(ang), y1=cy+r*Math.sin(ang); ang+=sweep;
     var x2=cx+r*Math.cos(ang), y2=cy+r*Math.sin(ang);
-    pieSvg += '<path d="M'+cx+','+cy+' L'+x1.toFixed(1)+','+y1.toFixed(1)+' A'+r+','+r+' 0 '+(sweep>Math.PI?1:0)+',1 '+x2.toFixed(1)+','+y2.toFixed(1)+' Z" fill="'+s.c+'" stroke="#fff" stroke-width="2"/>';
+    pieSvg += '<path d="M'+cx+','+cy+' L'+x1.toFixed(1)+','+y1.toFixed(1)
+      +' A'+r+','+r+' 0 '+(sweep>Math.PI?1:0)+',1 '+x2.toFixed(1)+','+y2.toFixed(1)
+      +' Z" fill="'+s.c+'" stroke="#fff" stroke-width="2"/>';
   }
   el("pieEl").innerHTML = pieSvg;
-  var legHtml = "";
+  var legHtml="";
   for (var li=0; li<slices.length; li++) {
-    var sl = slices[li];
-    legHtml += '<div class="pie-leg"><div class="swatch" style="background:'+sl.c+'"></div><div><div class="pie-lbl">'+sl.l+'</div><div class="pie-sub">$'+sl.v.toLocaleString()+' · '+pct(sl.v,INCOME)+'% of income</div></div></div>';
+    var sl=slices[li];
+    legHtml += '<div class="pie-leg"><div class="swatch" style="background:'+sl.c+'"></div>'
+      +'<div><div class="pie-lbl">'+sl.l+'</div>'
+      +'<div class="pie-sub">$'+sl.v.toFixed(0)+' &middot; '+pct(sl.v,inc.total)+'% of income</div>'
+      +'</div></div>';
   }
   el("pieLegEl").innerHTML = legHtml;
-  var incData = [
-    ["Net per paycheck","$3,850.81","Every 2 weeks · $5,000 gross"],
-    ["2-paycheck month","$7,701.62","Most months (Jun, Aug, Sep, Oct, Nov, Dec)"],
-    ["3-paycheck month","$11,552.43","July 2026 & January 2027 🎉"],
-    ["May paycheck (old job)","$5,425","Apr 30 · covered May minimums"],
-    ["May 22 paycheck (new job)","$3,850.81","First Modern Wisdom check"],
-    ["Annual salary","$130,000","Pre-tax · $5,000 gross per check"],
-    ["Year-end bonus (min)","$10,000","Pre-tax · Dec 2026"],
-    ["Bonus net (22% fed only)","$7,800","No TX state income tax!"]
-  ];
-  var iHtml="";
-  for (var ii=0; ii<incData.length; ii++) {
-    var d=incData[ii];
-    iHtml += '<div class="irow"><div class="irow-top"><span class="ilbl">'+d[0]+'</span><span class="ival">'+d[1]+'</span></div><div class="isub">'+d[2]+'</div></div>';
-  }
+
+  // Income section — editable using data attributes (no inline quote escaping)
+  var incChanged_checks = !!(state.incomeOvr[mi] && state.incomeOvr[mi].checksThisMonth !== undefined);
+  var incChanged_net    = !!(state.incomeOvr[mi] && state.incomeOvr[mi].netPerCheck    !== undefined);
+
+  var checkReset = (!isPast && incChanged_checks)
+    ? '<button class="edit-reset" onclick="resetIncomeField('+mi+',this.dataset.f)" data-f="checksThisMonth" title="Reset">&#8630;</button>'
+    : '';
+  var checkInp = isPast
+    ? '<span class="income-edit-inp">'+inc.checks+'</span>'
+    : '<div class="edit-amt-wrap">'
+      +'<input type="number" step="1" min="1" max="3" class="income-edit-inp'+(incChanged_checks?' changed':'')+'" value="'+inc.checks+'"'
+      +' data-mi="'+mi+'" data-f="checksThisMonth" onchange="setIncomeField(parseInt(this.dataset.mi),this.dataset.f,this.value)"/>'
+      +checkReset+'</div>';
+
+  var netReset = (!isPast && incChanged_net)
+    ? '<button class="edit-reset" onclick="resetIncomeField('+mi+',this.dataset.f)" data-f="netPerCheck" title="Reset">&#8630;</button>'
+    : '';
+  var netInp = isPast
+    ? '<span class="income-edit-inp">$'+inc.netPerCheck.toFixed(2)+'</span>'
+    : '<div class="edit-amt-wrap">'
+      +'<input type="number" step="0.01" min="0" class="income-edit-inp'+(incChanged_net?' changed':'')+'" value="'+inc.netPerCheck.toFixed(2)+'"'
+      +' data-mi="'+mi+'" data-f="netPerCheck" onchange="setIncomeField(parseInt(this.dataset.mi),this.dataset.f,this.value)"/>'
+      +netReset+'</div>';
+
+  var iHtml =
+    '<div class="income-edit-row"><div class="income-edit-top">'
+    +'<span class="income-edit-lbl">Paychecks this month</span>'+checkInp+'</div>'
+    +'<div class="income-edit-sub">Usually 2 &middot; July &amp; January = 3</div></div>'
+
+    +'<div class="income-edit-row"><div class="income-edit-top">'
+    +'<span class="income-edit-lbl">Net per paycheck</span>'+netInp+'</div>'
+    +'<div class="income-edit-sub">Current: $3,850.81 &middot; update if pay changes</div></div>'
+
+    +'<div class="income-edit-row" style="background:#f5f3ff;border-radius:8px;padding:8px 10px;margin-top:6px">'
+    +'<div class="income-edit-top"><span class="income-edit-lbl" style="font-weight:500;color:#4c1d95">Total take-home this month</span>'
+    +'<span style="font-weight:500;color:#166534;font-size:14px">$'+inc.total.toFixed(2)+'</span></div>'
+    +'<div class="income-edit-sub">'+inc.checks+' checks &times; $'+inc.netPerCheck.toFixed(2)+'</div></div>';
+
+  [
+    ["Annual salary","$130,000","Pre-tax"],
+    ["Year-end bonus (min)","$10,000","Pre-tax &middot; Dec 2026"],
+    ["Bonus net (22% fed)","$7,800","No TX state income tax!"]
+  ].forEach(function(d){
+    iHtml += '<div class="income-edit-row"><div class="income-edit-top">'
+      +'<span class="income-edit-lbl">'+d[0]+'</span>'
+      +'<span style="font-weight:500;color:#4c1d95">'+d[1]+'</span></div>'
+      +'<div class="income-edit-sub">'+d[2]+'</div></div>';
+  });
   el("incEl").innerHTML = iHtml;
-  var balHtml="";
-  for (var ai=0; ai<ACCOUNTS.length; ai++) {
-    var a=ACCOUNTS[ai];
-    balHtml += '<div style="margin-bottom:10px"><div style="display:flex;justify-content:space-between;font-size:13px;margin-bottom:3px"><span style="color:#374151">'+a.name+' <span style="font-size:11px;color:#8b5cf6">('+a.badge+')</span></span><span style="font-weight:500;color:#4c1d95">'+usd(START[a.id])+'</span></div><div class="pwrap"><div class="pfill" style="background:'+a.color+';width:'+pct(START[a.id],START_TOTAL)+'%"></div></div></div>';
-  }
-  balHtml += '<div style="display:flex;justify-content:space-between;font-size:14px;font-weight:500;color:#4c1d95;padding-top:6px;border-top:1px solid #ddd6fe"><span>Total</span><span>'+usd(START_TOTAL)+'</span></div>';
-  el("balEl").innerHTML = balHtml;
-  var goals=["Pay off ALL debt ($30,762)","Get a car","Save $15,000","Travel 4x: FL · St Maarten · Punta Cana · London · Mauritius · Mass/NYC · Orlando"];
-  var gHtml="";
-  for (var gi=0; gi<goals.length; gi++) gHtml+='<div class="goal-item"><span class="goal-d">◆</span>'+goals[gi]+'</div>';
-  el("goalsEl").innerHTML = gHtml;
-}
 
 function renderWaterfall(row) {
   var html = '<div class="wf-tier wf-t1"><div class="wf-box wf-hero"><div class="wf-lbl">Monthly income (Jun+)</div><div class="wf-val">$8,200</div><div class="wf-desc" style="color:#ddd6fe">+$7,800 bonus in Dec 🎁</div></div></div>';
@@ -1126,8 +1276,100 @@ function renderBiweekly() {
   el("bwBonusEl").innerHTML = bonusHtml;
 }
 
+// ═══ BUDGET / INCOME / DEBT EDIT ACTIONS ═════════════════════════
+function getBudgetForMonth(mi) {
+  // Returns effective budget items for a given month
+  // Start with defaults, then apply any overrides from this month or the most recent prior month
+  var items = [];
+  for (var i=0; i<BUDGET_ITEMS.length; i++) {
+    var base = BUDGET_ITEMS[i];
+    // Walk backwards to find the most recent override for this item
+    var amt = base.amt;
+    for (var m=mi; m>=0; m--) {
+      if (state.budgetOvr[m] && state.budgetOvr[m][base.name] !== undefined) {
+        amt = state.budgetOvr[m][base.name];
+        break;
+      }
+    }
+    items.push({name:base.name, amt:amt, cat:base.cat, isChanged: amt !== base.amt});
+  }
+  return items;
+}
+
+function getIncomeForMonth(mi) {
+  // Walk backwards to find most recent income override
+  var checks = (mi === BONUS_IDX || mi === 16) ? 3 : 2; // July and Jan are 3-check
+  var netPer = NET_PER_CHECK;
+  for (var m=mi; m>=0; m--) {
+    if (state.incomeOvr[m]) {
+      if (state.incomeOvr[m].checksThisMonth !== undefined) checks = state.incomeOvr[m].checksThisMonth;
+      if (state.incomeOvr[m].netPerCheck !== undefined) netPer = state.incomeOvr[m].netPerCheck;
+      break;
+    }
+  }
+  return {checks: checks, netPerCheck: netPer, total: checks * netPer};
+}
+
+function getDebtMinForMonth(mi, acctId) {
+  for (var m=mi; m>=0; m--) {
+    if (state.debtMinOvr[m] && state.debtMinOvr[m][acctId] !== undefined) {
+      return state.debtMinOvr[m][acctId];
+    }
+  }
+  for (var ai=0; ai<ACCOUNTS.length; ai++) {
+    if (ACCOUNTS[ai].id === acctId) return ACCOUNTS[ai].min;
+  }
+  return 0;
+}
+
+window.setBudgetItem = function(mi, name, val) {
+  var n = parseFloat(val);
+  if (isNaN(n) || n < 0) return;
+  if (!state.budgetOvr[mi]) state.budgetOvr[mi] = {};
+  state.budgetOvr[mi][name] = n;
+  saveToSupabase(); renderBudget();
+};
+window.resetBudgetItem = function(mi, name) {
+  if (state.budgetOvr[mi]) {
+    delete state.budgetOvr[mi][name];
+    if (!Object.keys(state.budgetOvr[mi]).length) delete state.budgetOvr[mi];
+  }
+  saveToSupabase(); renderBudget();
+};
+window.setIncomeField = function(mi, field, val) {
+  var n = parseFloat(val);
+  if (isNaN(n) || n < 0) return;
+  if (!state.incomeOvr[mi]) state.incomeOvr[mi] = {};
+  state.incomeOvr[mi][field] = n;
+  saveToSupabase(); renderBudget();
+};
+window.resetIncomeField = function(mi, field) {
+  if (state.incomeOvr[mi]) {
+    delete state.incomeOvr[mi][field];
+    if (!Object.keys(state.incomeOvr[mi]).length) delete state.incomeOvr[mi];
+  }
+  saveToSupabase(); renderBudget();
+};
+window.setDebtMin = function(mi, acctId, val) {
+  var n = parseFloat(val);
+  if (isNaN(n) || n < 0) return;
+  if (!state.debtMinOvr[mi]) state.debtMinOvr[mi] = {};
+  state.debtMinOvr[mi][acctId] = n;
+  saveToSupabase(); render();
+};
+window.resetDebtMin = function(mi, acctId) {
+  if (state.debtMinOvr[mi]) {
+    delete state.debtMinOvr[mi][acctId];
+    if (!Object.keys(state.debtMinOvr[mi]).length) delete state.debtMinOvr[mi];
+  }
+  saveToSupabase(); render();
+};
+
+// ═══ BUDGET / INCOME / DEBT EDIT ACTIONS ═════════════════════════
 // ═══ INIT ═════════════════════════════════════════════════════════
 initSupabase();
+
+}
 
 })();
 </script>
