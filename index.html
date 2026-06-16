@@ -337,7 +337,7 @@ var state = {
   debtMinOvr: {}
 };
 var activeMonth = 0;
-var budgetMonth = 0;
+var budgetMonth = (function(){var n=new Date();return Math.max(0,Math.min((n.getFullYear()-2026)*12+(n.getMonth()-4),19));})();
 var supa = null;
 var saveTimer = null;
 
@@ -1097,7 +1097,8 @@ function renderBiweekly() {
     {name:'Therapy/Self care', monthly:175,    icon:'💆'},
     {name:'Debt repayment',    monthly:3290.75,icon:'💳'},
     {name:'Recurring expenses',monthly:416.81, icon:'🔄'},
-    {name:'Car &amp; fun fund',monthly:400,    icon:'🚗'}
+    {name:'Car Fund',          monthly:658,    icon:'🚗'},
+    {name:'Fun Fund',          monthly:100,    icon:'🎉'}
   ];
   var bh2 = '<div class="card"><div class="stitle">Per paycheck — 2-check month</div>';
   var bh3 = '<div class="card"><div class="stitle">Per paycheck — 3-check month 🎉</div>'
