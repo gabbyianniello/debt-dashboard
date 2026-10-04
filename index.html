@@ -153,6 +153,23 @@ tbody td:first-child{text-align:left;font-weight:500;color:#5b21b6;white-space:n
 .bw-chip{display:inline-block;background:#f5f3ff;border:1px solid #ddd6fe;border-radius:20px;padding:2px 10px;font-size:11px;color:#5b21b6;margin:2px}
 .bw-chip.hot{background:#7c3aed;color:#fff;border-color:#7c3aed}
 .bw-chip.amb{background:#fef3c7;color:#92400e;border-color:#fcd34d}
+/* scenario switch + bonus comparison */
+.scn{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:10px 1.5rem;background:#fff;border-bottom:1px solid #ede9fe}
+.scn-lbl{font-size:11px;color:#7c3aed;text-transform:uppercase;letter-spacing:.05em;font-weight:500}
+.scn-btns{display:inline-flex;border:1px solid #ddd6fe;border-radius:20px;overflow:hidden}
+.scn-btn{padding:6px 14px;font-size:12px;font-family:inherit;border:none;background:#fff;color:#4c1d95;cursor:pointer}
+.scn-btn.on{background:#7c3aed;color:#fff;font-weight:500}
+.scn-sum{font-size:12px;color:#6b7280}
+.cmp-box{border:1px solid #ddd6fe;border-radius:10px;padding:12px 14px;background:#fff}
+.cmp-box.on{border:2px solid #7c3aed;background:#f5f3ff}
+.cmp-box.bon{border-color:#86efac;background:#f0fdf4}
+.cmp-box.bon.on{border:2px solid #166534}
+.cmp-note{font-size:13px;color:#4c1d95;line-height:1.6;margin:12px 0}
+table.cmp{min-width:680px}
+table.cmp td.grp,table.cmp th.grp{border-left:1px solid #ddd6fe}
+table.cmp thead th.grp{text-align:center}
+table.cmp td.dif{font-weight:600;color:#166534;background:#f0fdf4}
+table.cmp td.left{font-weight:500;color:#4c1d95}
 footer{text-align:center;font-size:11px;color:#c4b5fd;padding:1.5rem;border-top:1px solid #ede9fe}
 @media(max-width:600px){.two{grid-template-columns:1fr}.hero{grid-template-columns:1fr 1fr}}
 </style>
@@ -185,9 +202,19 @@ footer{text-align:center;font-size:11px;color:#c4b5fd;padding:1.5rem;border-top:
   <button class="tab" id="tab-biweekly" onclick="goTab('biweekly')">Paycheck planner</button>
 </nav>
 
+<div class="scn">
+  <span class="scn-lbl">Plan view</span>
+  <div class="scn-btns">
+    <button class="scn-btn" id="scn-nobonus" onclick="setScenario('nobonus')">Realistic · no bonus</button>
+    <button class="scn-btn" id="scn-bonus" onclick="setScenario('bonus')">🎁 With $7,800 bonus</button>
+  </div>
+  <span class="scn-sum" id="scnSumEl"></span>
+</div>
+
 <!-- TRACKER -->
 <div class="page on" id="page-tracker">
   <div class="hero" id="heroEl"></div>
+  <div class="card" id="cmpEl" style="margin-bottom:20px"></div>
   <div style="margin-bottom:16px">
     <div class="slbl">Select month</div>
     <div class="pills" id="pillsEl"></div>
@@ -295,6 +322,15 @@ var START_TOTAL = 30762;
 var BONUS_IDX = 7;
 var BONUS_NET = 7800;
 var EXTRA = 2000;
+// If a card would be left owing less than this after the month's payment, finish it that
+// month instead of carrying a tiny balance into the next one. Applies from Oct 2026 on,
+// so the plan for earlier months is unchanged.
+var SWEEP_MAX = 200;
+var SWEEP_FROM_IDX = 5;
+// Which plan the dashboard shows: 'nobonus' (realistic) or 'bonus'. A per-browser view
+// setting, not part of the shared saved data.
+var scenario = 'nobonus';
+try { var _sc = localStorage.getItem('ddb_scenario'); if (_sc === 'bonus' || _sc === 'nobonus') scenario = _sc; } catch(e) {}
 var NET_PER_CHECK = 3850.81;
 var MONTHS = [
   'May 2026','Jun 2026','Jul 2026','Aug 2026','Sep 2026','Oct 2026',
@@ -491,7 +527,7 @@ function getDebtMin(mi, acctId) {
 }
 
 // ── PROJECTION ────────────────────────────────────────────────────
-function computeProposed(mi, bals) {
+function computeProposed(mi, bals, withBonus) {
   var pay = {cap:0, bofa:0, wf:0, pp:0};
   var interest = {
     cap:  bals.cap  * (0.2149/12),
@@ -513,7 +549,7 @@ function computeProposed(mi, bals) {
   for (var j = 0; j < ACCOUNTS.length; j++) {
     if (bals[ACCOUNTS[j].id] <= 0.005) pool += ACCOUNTS[j].min;
   }
-  if (mi === BONUS_IDX) pool += BONUS_NET;
+  if (withBonus && mi === BONUS_IDX) pool += BONUS_NET;
   // Waterfall extra in avalanche order
   for (var k = 0; k < ORDER.length; k++) {
     var id = ORDER[k];
@@ -525,10 +561,24 @@ function computeProposed(mi, bals) {
     pool -= alloc;
     if (pool <= 0) break;
   }
+  // Finish off small leftovers (see SWEEP_MAX)
+  pay.sweep = 0; pay.sweepId = null;
+  if (mi >= SWEEP_FROM_IDX) {
+    var sweepLeft = SWEEP_MAX;
+    for (var s = 0; s < ORDER.length; s++) {
+      var sid = ORDER[s];
+      if (bals[sid] <= 0.005) continue;
+      var rem = bals[sid] + interest[sid] - pay[sid];
+      if (rem > 0.005 && rem <= sweepLeft) {
+        pay[sid] += rem; pay.sweep += rem; pay.sweepId = sid; sweepLeft -= rem;
+      }
+    }
+  }
   return pay;
 }
 
-function buildProjection() {
+function buildProjection(withBonus) {
+  if (withBonus === undefined) withBonus = (scenario === 'bonus');
   var bals = {cap: START.cap, bofa: START.bofa, wf: START.wf, pp: START.pp};
   var rows = [];
   for (var i = 0; i < MONTHS.length; i++) {
@@ -539,7 +589,7 @@ function buildProjection() {
       wf:   sb.wf   * (0.01/12),
       pp:   0
     };
-    var proposed = computeProposed(i, sb);
+    var proposed = computeProposed(i, sb, withBonus);
     var ov = state.actuals[i] || {};
     var actual = {
       cap:  ov.cap  !== undefined ? +ov.cap  : proposed.cap,
@@ -568,7 +618,7 @@ function buildProjection() {
       proposed: proposed, actual: actual,
       edited: edited, anyEdit: anyEdit,
       eb: eb, totalBal: totalBal, totalPaid: totalPaid,
-      isMay: i === 0, isBonus: i === BONUS_IDX, isZero: totalBal < 0.5
+      isMay: i === 0, isBonus: withBonus && i === BONUS_IDX, isBonusMonth: i === BONUS_IDX, isZero: totalBal < 0.5
     });
     bals = {cap: eb.cap, bofa: eb.bofa, wf: eb.wf, pp: eb.pp};
     if (totalBal < 0.005) break;
@@ -587,6 +637,11 @@ function goTab(name) {
 window.goTab = goTab;
 
 window.selectMo = function(i) { activeMonth = i; render(); };
+window.setScenario = function(s) {
+  scenario = (s === 'bonus') ? 'bonus' : 'nobonus';
+  try { localStorage.setItem('ddb_scenario', scenario); } catch(e) {}
+  render();
+};
 
 window.setActual = function(mi, acctId, val) {
   var n = parseFloat(val);
@@ -679,12 +734,15 @@ window.resetDebtMin = function(btn) {
 // ── RENDER ────────────────────────────────────────────────────────
 function render() {
   try {
-    var proj = buildProjection();
+    var projNo = buildProjection(false), projYes = buildProjection(true);
+    var proj = (scenario === 'bonus') ? projYes : projNo;
     if (!proj || proj.length === 0) { setSync('No data'); return; }
     activeMonth = Math.min(activeMonth, proj.length - 1);
     var row = proj[activeMonth];
     renderProgress(proj);
+    renderScenario(projNo, projYes);
     renderHero(proj, row);
+    renderCompare(projNo, projYes);
     renderPills(proj);
     renderMonthDetail(row);
     renderSchedule(proj);
@@ -715,7 +773,7 @@ function renderProgress(proj) {
   el('p3').textContent = usd(remaining) + ' to go';
 }
 
-function renderHero(proj, row) {
+function payoffMonths(proj) {
   var payoff = {};
   for (var ri = 0; ri < proj.length; ri++) {
     var r = proj[ri];
@@ -724,8 +782,95 @@ function renderHero(proj, row) {
       if (!payoff[a.id] && r.eb[a.id] < 0.5 && r.sb[a.id] >= 0.5) payoff[a.id] = r.label;
     }
   }
+  return payoff;
+}
+
+// Last month of a projection, or null if the debt isn't cleared within the months modelled
+function debtFreeLabel(proj) {
+  var last = proj[proj.length - 1];
+  return last.isZero ? last.label : null;
+}
+
+function renderScenario(projNo, projYes) {
+  el('scn-nobonus').className = 'scn-btn' + (scenario === 'nobonus' ? ' on' : '');
+  el('scn-bonus').className   = 'scn-btn' + (scenario === 'bonus'   ? ' on' : '');
+  var a = debtFreeLabel(projNo) || 'after ' + projNo[projNo.length-1].label;
+  var b = debtFreeLabel(projYes) || 'after ' + projYes[projYes.length-1].label;
+  el('scnSumEl').innerHTML = 'Debt-free <strong style="color:#4c1d95">'+a+'</strong> without the bonus · <strong style="color:#166534">'+b+'</strong> with it';
+}
+
+function renderCompare(projNo, projYes) {
+  var SHORT = {cap:'CapOne', bofa:'BofA', wf:'Wells Fargo', pp:'PayPal'};
+  var start = Math.min(todayMonthIdx(), projNo.length - 1, projYes.length - 1);
+  var end = Math.max(projNo.length, projYes.length) - 1;
+  // Only the cards that still have a balance
+  var accts = [];
+  for (var ai = 0; ai < ACCOUNTS.length; ai++) {
+    if (projNo[start].sb[ACCOUNTS[ai].id] >= 0.5) accts.push(ACCOUNTS[ai]);
+  }
+  function sumBox(proj, isBon) {
+    var on = (scenario === 'bonus') === isBon;
+    var po = payoffMonths(proj), parts = [];
+    for (var i = 0; i < accts.length; i++) parts.push(SHORT[accts[i].id] + ' ' + (po[accts[i].id] || '—'));
+    var df = debtFreeLabel(proj);
+    return '<div class="cmp-box'+(isBon?' bon':'')+(on?' on':'')+'">'
+      +'<div class="clbl" style="color:'+(isBon?'#166534':'#7c3aed')+'">'+(isBon?'🎁 With $7,800 bonus':'Realistic · no bonus')+(on?' · showing':'')+'</div>'
+      +'<div class="cval" style="color:'+(isBon?'#166534':'#4c1d95')+'">'+(df ? 'Debt-free '+df : 'Not cleared by '+proj[proj.length-1].label)+'</div>'
+      +'<div class="csub" style="color:'+(isBon?'#166534':'#8b5cf6')+'">'+parts.join(' · ')+'</div></div>';
+  }
+  function interestFrom(proj) {
+    var t = 0;
+    for (var i = start; i < proj.length; i++) t += proj[i].interest.cap + proj[i].interest.bofa + proj[i].interest.wf;
+    return t;
+  }
+  var gap = projNo.length - projYes.length;
+  var intDiff = interestFrom(projNo) - interestFrom(projYes);
+  var note;
+  if (!debtFreeLabel(projNo) || !debtFreeLabel(projYes)) note = '';
+  else if (gap > 0) note = 'The bonus gets you there <strong>'+gap+' month'+(gap===1?'':'s')+' sooner</strong>'
+    + (intDiff >= 1 ? ' and saves about <strong>'+usd(intDiff)+'</strong> in interest' : '') + '. Everything before '+MONTHS[BONUS_IDX]+' is the same either way.';
+  else note = 'Both views finish in the same month.';
+
+  var h = '<div class="stitle">Bonus vs. no bonus</div>'
+    + '<div class="two">'+sumBox(projNo,false)+sumBox(projYes,true)+'</div>'
+    + (note ? '<div class="cmp-note">'+note+'</div>' : '<div style="height:12px"></div>');
+
+  var n = accts.length + 1;
+  h += '<div class="tbl-wrap"><table class="cmp"><thead><tr><th style="text-align:left">Month</th>'
+    + '<th class="grp" colspan="'+n+'">No bonus</th><th class="grp" colspan="'+n+'">With bonus</th></tr><tr class="subhd"><th></th>';
+  for (var g = 0; g < 2; g++) {
+    for (var c = 0; c < accts.length; c++) h += '<th'+(c===0?' class="grp"':'')+'>'+SHORT[accts[c].id]+'</th>';
+    h += '<th class="act">left owing</th>';
+  }
+  h += '</tr></thead><tbody>';
+  function cells(r, other) {
+    var out = '';
+    for (var c = 0; c < accts.length; c++) {
+      var id = accts[c].id, cls = (c === 0 ? 'grp' : ''), txt;
+      if (!r || r.sb[id] < 0.5) txt = '<span class="tgone">—</span>';
+      else {
+        txt = usd(r.actual[id]) + (r.eb[id] < 0.5 ? ' <span class="tpoff">DONE</span>' : '');
+        var o = (other && other.sb[id] >= 0.5) ? other.actual[id] : 0;
+        if (Math.abs(r.actual[id] - o) > 0.5) cls += ' dif';
+      }
+      out += '<td class="'+cls+'">'+txt+'</td>';
+    }
+    out += '<td class="left">'+(!r ? '<span class="tgone">—</span>' : (r.isZero ? '<span class="tzero">🎉 $0</span>' : usd(r.totalBal)))+'</td>';
+    return out;
+  }
+  for (var i = start; i <= end; i++) {
+    var rn = projNo[i], ry = projYes[i];
+    h += '<tr><td>'+MONTHS[i]+(i === BONUS_IDX ? '<span class="mini b">bonus month</span>' : '')+'</td>'+cells(rn, ry)+cells(ry, rn)+'</tr>';
+  }
+  h += '</tbody></table></div>'
+    + '<p style="font-size:11px;color:#8b5cf6;margin-top:8px">Green = where the two views differ. Uses your actual payments wherever you have entered them.</p>';
+  el('cmpEl').innerHTML = h;
+}
+
+function renderHero(proj, row) {
+  var payoff = payoffMonths(proj);
   var heroData = [
-    {l:'Debt-free date',       v: proj[proj.length-1].label, s:'on current plan'},
+    {l:'Debt-free date',       v: proj[proj.length-1].label, s: scenario === 'bonus' ? 'with the bonus' : 'realistic · no bonus'},
     {l:'This month plan',      v: usd(row.totalPaid),         s: row.label},
     {l:'CapOne paid off',      v: payoff.cap  || '—',         s:'then $2,400 → BofA'},
     {l:'BofA paid off',        v: payoff.bofa || '—',         s:'then $2,753 → WF'},
@@ -782,6 +927,12 @@ function renderStrategy(row) {
   if (row.isMay) h += 'Transition month: $5,425 old job check covers <strong>minimums only</strong>.';
   else if (row.isBonus) h += 'Bonus month! $10k → ~$7,800 net added to $2,000 extra pool = <strong>$9,800 extra</strong> waterfalling down.';
   else h += 'Pay minimums on all cards ($'+Math.round(totalMin).toLocaleString()+'), then waterfall the <strong>$'+Math.round(totalExtra).toLocaleString()+' extra</strong> into highest APR first.';
+  if (row.proposed.sweep > 0.5) {
+    var swName = '';
+    for (var si = 0; si < ACCOUNTS.length; si++) if (ACCOUNTS[si].id === row.proposed.sweepId) swName = ACCOUNTS[si].name;
+    h += ' That includes <strong>'+usd(row.proposed.sweep)+' extra</strong> to finish '+swName+' this month instead of leaving a small balance.';
+  }
+  if (row.isBonusMonth && !row.isBonus) h += ' <span style="color:#8b5cf6">No bonus counted in this view.</span>';
   h += '</div><div class="strat-flow"><span class="strat-chip">Mins: '+usd(totalMin)+'</span>';
   if (totalExtra > 0.5) {
     h += '<span class="strat-arr">+</span><span class="strat-chip">Extra: '+usd(totalExtra)+'</span><span class="strat-arr">→</span>';
@@ -1042,7 +1193,7 @@ function renderBudget() {
     +'<span style="font-weight:500;color:#166534;font-size:14px">$'+inc.total.toFixed(2)+'</span></div>'
     +'<div class="inc-sub">'+inc.checks+' × $'+inc.net.toFixed(2)+'</div></div>';
   // Static
-  var staticInc = [['Annual salary','$130,000','Pre-tax'],['Year-end bonus','$10,000','Pre-tax · Dec 2026'],['Bonus net (22% fed)','$7,800','No TX state income tax!']];
+  var staticInc = [['Annual salary','$130,000','Pre-tax'],['Year-end bonus','$10,000','Pre-tax · Dec 2026 · not counted in the realistic view'],['Bonus net (22% fed)','$7,800','No TX state income tax!']];
   for (var ii = 0; ii < staticInc.length; ii++) {
     var sd = staticInc[ii];
     ih += '<div class="inc-row"><div class="inc-top"><span class="inc-lbl">'+sd[0]+'</span><span style="font-weight:500;color:#4c1d95">'+sd[1]+'</span></div><div class="inc-sub">'+sd[2]+'</div></div>';
